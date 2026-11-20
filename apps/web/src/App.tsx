@@ -4,7 +4,7 @@ import { languages, messages, type Copy, type StudioLocale } from './messages'
 import { Workspace } from './Workspace'
 
 function Brand() {
-  return <span className="brand"><span className="brand-mark" aria-hidden="true">⌘</span>LingoCode</span>
+  return <span className="brand"><span className="brand-mark" aria-hidden="true">◈</span>LingoCode</span>
 }
 
 export function App() {
@@ -88,9 +88,11 @@ function AuthPage({ t, expired, onSuccess }: { t: Copy; expired: boolean; onSucc
       <div className="language-strip">{Object.entries(languages).map(([code, label]) =>
         <span key={code} lang={code}>{label}</span>)}</div>
       <h1>{t.hero}</h1><p>{t.intro}</p>
-      <div className="steps" aria-hidden="true">
-        <span>{t.plan}</span><span>→</span><span>{t.build}</span><span>→</span><span>{t.preview}</span>
-      </div>
+      <ol className="steps">
+        <li><span aria-hidden="true">✦</span>{t.plan}</li>
+        <li><span aria-hidden="true">◇</span>{t.build}</li>
+        <li><span aria-hidden="true">▷</span>{t.preview}</li>
+      </ol>
     </section>
     <section className="auth-panel">
       <h2>{mode === 'register' ? t.register : t.signIn}</h2>
@@ -124,6 +126,7 @@ function Dashboard({ session, locale, t, onExpired }: {
   const [loading, setLoading] = useState(true)
   const [problem, setProblem] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [requestJobs, setRequestJobs] = useState(false)
   const [provider, setProvider] = useState<'mock' | 'compatible'>()
 
   useEffect(() => {
@@ -136,7 +139,10 @@ function Dashboard({ session, locale, t, onExpired }: {
       if (reason instanceof ApiError && reason.status === 401) onExpired()
       else setProblem(true)
     }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    api.config(controller.signal).then((config) => setProvider(config.provider)).catch(() => {})
+    api.config(controller.signal).then((config) => {
+      setProvider(config.provider)
+      setRequestJobs(config.request_jobs === true)
+    }).catch(() => {})
     return () => controller.abort()
   }, [api, onExpired])
 
@@ -198,7 +204,7 @@ function Dashboard({ session, locale, t, onExpired }: {
     <div className="workspace">
       {problem && <p className="notice" role="alert">{t.error}</p>}
       {loading ? <p role="status">{t.loading}</p> : project
-        ? <Workspace key={project.id} project={project} api={api} t={t} onExpired={onExpired}
+        ? <Workspace key={project.id} project={project} api={api} t={t} requestJobs={requestJobs} onExpired={onExpired}
           onUpdate={(updated) => setProjects((items) => items.map((item) => item.id === updated.id ? updated : item))} />
         : <section className="welcome empty-workspace">
           <h1>{t.app}</h1><p>{t.empty}</p>

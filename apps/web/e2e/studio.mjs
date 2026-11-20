@@ -36,6 +36,11 @@ try {
     const email = 'smoke-' + randomUUID() + '@example.test'
     const password = 'Studio-smoke-only'
     await page.goto(base)
+    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme), 'light')
+    assert.equal(await page.locator('.auth-panel').evaluate((panel) => getComputedStyle(panel).animationName), 'enter')
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    assert.equal(await page.locator('.auth-panel').evaluate((panel) => getComputedStyle(panel).animationName), 'none')
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.getByLabel('Email address').fill(email)
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: 'Create account' }).click()

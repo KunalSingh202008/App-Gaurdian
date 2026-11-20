@@ -128,3 +128,98 @@ textarea::placeholder { color: #a5aba9; }
   .project-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
   .rail-footer { padding-top: 0; }
 }
+
+/* Light studio surfaces keep the focus on the project and the generated app. */
+:root {
+  font-size: 16px;
+  color-scheme: light;
+  color: #21312c;
+  background: #f4f7f3;
+  --card: #ffffff;
+  --deep: #f5f8f4;
+  --line: #d3ded6;
+  --muted: #52645c;
+  --accent: #deeec2;
+  --ink: #273d24;
+  --action: #31654b;
+  --focus: #32684f;
+}
+:focus-visible { outline-color: var(--focus); }
+[role=alert], .panel-empty[role=alert], .notice[role=alert] { color: #a52e24; }
+.studio-header { background: #fffffff5; }
+.brand-mark { background: #daeac8; color: #2d5b43; }
+.auth-layout {
+  position: relative;
+  isolation: isolate;
+  gap: clamp(2rem, 7vw, 7rem);
+}
+.auth-layout::before {
+  position: absolute;
+  content: '';
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 22% 28%, #dbead0 0, transparent 43%),
+    radial-gradient(ellipse at 77% 65%, #e4eef4 0, transparent 44%);
+}
+.welcome h1 { max-width: 11ch; color: #183b30; }
+.welcome p { line-height: 1.65; }
+.language-strip { color: #315d47; }
+.language-strip span { border-color: #b6ccba; background: #ffffffbc; }
+.steps { list-style: none; padding: 0; margin-bottom: 0; color: #315d47; }
+.steps li {
+  display: inline-flex; gap: .4rem; align-items: center;
+  background: #fff; border: 1px solid var(--line); border-radius: .6rem;
+  padding: .45rem .7rem; font-size: .88rem; font-weight: 650;
+}
+.steps li span { color: #32684f; }
+.auth-panel { box-shadow: 0 18px 50px #28473515; }
+.auth-panel [role=status] { margin: .6rem 0; color: var(--muted); }
+.rail { background: #f8faf7; }
+.project-list [aria-pressed=true], .activity [aria-pressed=true] { background: #e6f1e5; border-color: #9fbaaa; }
+.project-icon, .subtle-label, .link { color: var(--action); }
+.provider i { background: #418160; }
+.primary { color: #fff; background: var(--action); border-color: var(--action); }
+.primary:not(:disabled):hover { background: #24513b; }
+.quiet:hover:not(:disabled), .icon-button:hover:not(:disabled) { border-color: #7b9a86; }
+textarea::placeholder { color: #687973; }
+.prompt-card:focus-within { border-color: #9cbaaa; }
+.segmented :checked + span, .views [aria-pressed=true] { background: #eaf3e5; color: #285640; border-color: #a9c5af; }
+.segmented :focus-visible + span { outline-color: var(--focus); }
+.output-card, .activity, .prompt-card { box-shadow: 0 4px 16px #203a2c09; }
+.preview-wrap .record-app { border: 1px solid #d5e0d6; }
+.work-status { display: flex; align-items: center; gap: .6rem; }
+.pulse { display: inline-block; background: var(--action); border-radius: 50%; width: .5rem; height: .5rem; flex: none; }
+.record-row { animation: enter .27s ease-out both; }
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(.46rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 #40825c40; }
+  50% { box-shadow: 0 0 0 5px #40825c00; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .welcome, .auth-panel, .project-heading, .create-form, .work-grid, .panel-enter {
+    animation: enter .34s cubic-bezier(.22,.7,.28,1) both;
+  }
+  .auth-panel, .work-grid { animation-delay: .07s; }
+  .steps li { animation: enter .35s ease-out both; }
+  .steps li:nth-child(2) { animation-delay: .08s; }
+  .steps li:nth-child(3) { animation-delay: .16s; }
+  .primary, .quiet, .views button, .activity button, .project-list button, .segmented span {
+    transition: background-color .16s, border-color .16s, color .16s, transform .16s;
+  }
+  .primary:not(:disabled):active, .quiet:not(:disabled):active { transform: translateY(1px); }
+  .pulse { animation: pulse 1.35s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .record-row { animation: none; }
+}
+@media (max-width: 680px) {
+  .auth-layout::before { background: radial-gradient(ellipse at top left, #dbead0, transparent 65%); }
+  .auth-layout { gap: 1.45rem; }
+  .steps { margin-top: 1rem; }
+}

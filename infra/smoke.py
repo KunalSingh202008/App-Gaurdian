@@ -28,6 +28,8 @@ project = json.loads(request("/api/projects", {"name": "নোট", "locale": "b
 path = f"/api/projects/{project['id']}/generations"
 queued = json.loads(request(path, {"prompt": "নোটের তালিকা", "action": "build"}))
 assert queued["status"] == "queued"
+if json.loads(request("/api/config"))["request_jobs"]:
+    request(path + "/advance", {})
 job_path = f"{path}/{queued['id']}"
 deadline = monotonic() + 30
 while monotonic() < deadline:

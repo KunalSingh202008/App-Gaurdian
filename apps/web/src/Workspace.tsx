@@ -28,7 +28,7 @@ function createPreviewStore(revisionId: string): RecordStore {
 function Preview({ job, project, t }: { job: Job; project: Project; t: Copy }) {
   const store = useMemo(() => createPreviewStore(job.id), [job.id])
   if (!job.spec) return <p className="panel-empty">{t.noPreview}</p>
-  return <div className="preview-wrap">
+  return <div className="preview-wrap panel-enter">
     <Records key={job.id} spec={job.spec} locale={project.locale} store={store} />
     <small className="muted">{t.previewData}</small>
   </div>
@@ -101,15 +101,15 @@ function PromptForm({ t, project, busy, job, submit }: {
         {listening ? t.stopVoice : t.voice}
       </button>}
       <button className="primary" disabled={busy || listening || !prompt.trim()}>
-        {action === 'plan' ? t.planApp : action === 'revise' ? t.reviseApp : t.debugApp} <span aria-hidden="true">↗</span>
+        {action === 'plan' ? t.planApp : action === 'revise' ? t.reviseApp : t.debugApp}
       </button>
     </div>
     {voiceError && <p role="alert">{t.voiceError}</p>}
   </form>
 }
 
-export function Workspace({ project, api, t, onUpdate, onExpired }: {
-  project: Project; api: StudioClient; t: Copy; onUpdate: (project: Project) => void; onExpired: () => void
+export function Workspace({ project, api, t, requestJobs, onUpdate, onExpired }: {
+  project: Project; api: StudioClient; t: Copy; requestJobs: boolean; onUpdate: (project: Project) => void; onExpired: () => void
 }) {
   const [history, setHistory] = useState<JobSummary[]>([])
   const [selected, setSelected] = useState('')
@@ -146,6 +146,7 @@ export function Workspace({ project, api, t, onUpdate, onExpired }: {
     let timer: ReturnType<typeof setTimeout>
     async function poll() {
       try {
+        if (requestJobs) await api.advance(project.id, controller.signal)
         const items = await api.history(project.id, controller.signal)
         if (!controller.signal.aborted) setHistory(items)
       } catch (reason) {
@@ -156,7 +157,7 @@ export function Workspace({ project, api, t, onUpdate, onExpired }: {
     }
     timer = setTimeout(poll, 700)
     return () => { controller.abort(); clearTimeout(timer) }
-  }, [api, project.id, active, report])
+  }, [api, project.id, active, requestJobs, report])
 
   const status = summary?.status
   useEffect(() => {
@@ -244,7 +245,7 @@ export function Workspace({ project, api, t, onUpdate, onExpired }: {
         <button className="quiet" disabled={busy} onClick={() => updateProject(project.name, !project.archived)}>
           {project.archived ? t.unarchive : t.archive}
         </button>
-        {file && <button className="primary" disabled={busy} onClick={download}>{t.deploy} <span aria-hidden="true">↓</span></button>}
+        {file && <button className="primary" disabled={busy} onClick={download}>{t.deploy}</button>}
       </div>
     </header>
     {rename && <form className="rename-form" onSubmit={renameProject}>
@@ -260,10 +261,11 @@ export function Workspace({ project, api, t, onUpdate, onExpired }: {
           {(['planTitle', 'preview', 'files'] as const).map((item) => <button key={item} aria-pressed={view === item}
             onClick={() => setView(item)}>{t[item]}</button>)}
         </nav>
-        {loading || status === 'queued' || status === 'running' ? <p className="panel-empty" role="status">
+        {loading || status === 'queued' || status === 'running' ? <p className="panel-empty work-status" role="status">
+          <span className="pulse" aria-hidden="true" />
           {loading ? t.loading : status === 'queued' ? t.queue : t.running}
         </p> : status === 'failed' ? <p className="panel-empty" role="alert">{t.failed}</p> :
-          view === 'planTitle' ? current?.spec ? <div className="plan">
+          view === 'planTitle' ? current?.spec ? <div className="plan panel-enter" key={current.id}>
             <div lang={project.locale}>
               <h2>{current.spec.title}</h2><p>{current.spec.description}</p>
               <ol>{current.spec.steps.map((step, index) => <li key={index}>{step}</li>)}</ol>
@@ -272,11 +274,11 @@ export function Workspace({ project, api, t, onUpdate, onExpired }: {
             <ul className="field-list">{current.spec.fields.map((field) =>
               <li key={field.key}>{field.label}<small>{t[field.kind]}</small></li>)}</ul>
             {current.action === 'plan' && !project.archived && <button className="primary" disabled={disabled}
-              onClick={() => void submit('build', current.prompt, current.id)}>{t.buildPlan} <span aria-hidden="true">↗</span></button>}
+              onClick={() => void submit('build', current.prompt, current.id)}>{t.buildPlan}</button>}
           </div> : <p className="panel-empty">{summary ? t.loading : t.noHistory}</p> :
             view === 'preview' ? current && file && current.spec ? <Preview job={current} project={project} t={t} />
               : <p className="panel-empty">{t.noPreview}</p> :
-              current && file ? <div className="source-panel">
+              current && file ? <div className="source-panel panel-enter">
                 <label htmlFor="source-file">{t.source}</label>
                 <select id="source-file" value={file.path} onChange={(event) => setFilePath(event.target.value)}>
                   {current.files.map((item) => <option key={item.path}>{item.path}</option>)}

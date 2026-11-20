@@ -169,3 +169,19 @@ def test_worker_recovers_an_abandoned_job_and_records_provider_failure(database,
     monkeypatch.setenv("AI_PROVIDER", "compatible")
     failed = complete(path, owner, queue(path, owner, "Test unavailable provider", "plan"))
     assert failed["status"] == "failed" and not failed["files"]
+
+
+def test_request_generation_is_scoped_to_the_authenticated_project(database, monkeypatch):
+    monkeypatch.setenv("STUDIO_GENERATION_DRIVER", "request")
+    owner = signed_in()
+    other = signed_in("other@example.com")
+    first = project(owner)
+    second = project(other)
+    path = f"/api/projects/{first['id']}/generations"
+    other_path = f"/api/projects/{second['id']}/generations"
+    untouched = queue(other_path, other, "Other app", "plan")
+    pending = queue(path, owner, "मेरे कार्य", "plan")
+    assert client.post(path + "/advance", headers=other).status_code == 404
+    assert client.post(path + "/advance", headers=owner).status_code == 204
+    assert client.get(f"{path}/{pending['id']}", headers=owner).json()["status"] == "succeeded"
+    assert client.get(f"{other_path}/{untouched['id']}", headers=other).json()["status"] == "queued"

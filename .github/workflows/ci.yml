@@ -88,3 +88,48 @@ jobs:
         run: docker compose logs
       - if: always()
         run: docker compose down --volumes
+  vercel-app:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://lingocode:test@localhost:5432/lingocode_test
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: lingocode
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: lingocode_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lingocode -d lingocode_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: pip install -r requirements.txt
+      - name: Run the Vercel install and build commands
+        run: |
+          bash -c "$(node -p 'require("./vercel.json").installCommand')"
+          bash -c "$(node -p 'require("./vercel.json").buildCommand')"
+      - run: npx playwright-core install --with-deps chromium
+        working-directory: apps/web
+      - name: Exercise the deployment entrypoint without a separate worker
+        run: |
+          uvicorn app:app --host 127.0.0.1 --port 8080 > /tmp/studio.log 2>&1 &
+          trap 'kill "$!"; cat /tmp/studio.log' EXIT
+          for attempt in {1..20}; do
+            if curl --silent --fail http://127.0.0.1:8080/api/health; then break; fi
+            sleep 0.5
+          done
+          python3 infra/smoke.py
+          node apps/web/e2e/studio.mjs

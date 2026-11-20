@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
@@ -12,6 +13,7 @@ from auth import Owner, router
 from db import connect
 from providers import GeneratedFile, provider_mode
 from studio import Action, AppSpec, Locale, text_limit
+from worker import process_one
 
 app = FastAPI(title="LingoCode")
 app.include_router(router)
@@ -63,9 +65,16 @@ def health():
     return {"status": "ok"}
 
 
+def request_jobs() -> bool:
+    return (
+        os.getenv("STUDIO_GENERATION_DRIVER", "request" if os.getenv("VERCEL") == "1" else "worker")
+        == "request"
+    )
+
+
 @app.get("/api/config")
 def config():
-    return {"provider": provider_mode()}
+    return {"provider": provider_mode(), "request_jobs": request_jobs()}
 
 
 @app.get("/api/projects")
@@ -163,6 +172,15 @@ def queue(project_id: UUID, payload: JobRequest, owner: Owner) -> JobSummary:
             ).fetchone()
     except UniqueViolation as exc:
         raise HTTPException(409, "A generation is already in progress for this project") from exc
+
+
+@app.post("/api/projects/{project_id}/generations/advance", status_code=204)
+def advance(project_id: UUID, owner: Owner):
+    if not request_jobs():
+        raise HTTPException(404, "Request-driven generation is disabled")
+    with connect() as conn:
+        owned_project(conn, project_id, owner)
+    process_one(project_id)
 
 
 @app.post("/api/projects/{project_id}/generations/{job_id}/restore", status_code=201)

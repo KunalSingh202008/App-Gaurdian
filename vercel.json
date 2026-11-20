@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "installCommand": "npm ci --prefix apps/web --include=dev",
+  "buildCommand": "npm run build --prefix apps/web && mkdir -p public && cp -R apps/web/dist/. public/",
+  "functions": {
+    "app.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{apps/**,extensions/**,infra/**,services/api/tests/**}"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {"key": "X-Content-Type-Options", "value": "nosniff"},
+        {"key": "Content-Security-Policy", "value": "default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'"}
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [{"key": "Cache-Control", "value": "no-store"}]
+    }
+  ]
+}

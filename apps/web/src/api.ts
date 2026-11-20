@@ -70,7 +70,7 @@ export function connect(token: string) {
   const jobs = (id: string) => `${projects}/${id}/generations`
   const revision = (id: string, job: string) => `${jobs(id)}/${job}`
   return {
-    config: (signal: AbortSignal) => json<{ provider: 'mock' | 'compatible' }>('/config', token, { signal }),
+    config: (signal: AbortSignal) => json<{ provider: 'mock' | 'compatible'; request_jobs?: boolean }>('/config', token, { signal }),
     logout: () => response('/auth/logout', token, { method: 'POST' }),
     projects: (signal: AbortSignal) => json<Project[]>(projects, token, { signal }),
     create: (name: string, locale: Locale) => json<Project>(projects, token, { body: { name, locale } }),
@@ -80,6 +80,7 @@ export function connect(token: string) {
     revision: (id: string, job: string, signal: AbortSignal) => json<Job>(revision(id, job), token, { signal }),
     generate: (id: string, prompt: string, action: Action, sourceId?: string) =>
       json<JobSummary>(jobs(id), token, { body: { prompt, action, source_id: sourceId } }),
+    advance: (id: string, signal: AbortSignal) => response(jobs(id) + '/advance', token, { method: 'POST', signal }),
     restore: (id: string, job: string) => json<Job>(revision(id, job) + '/restore', token, { method: 'POST' }),
     export: async (id: string, job: string) => (await response(revision(id, job) + '/export', token)).blob(),
   }

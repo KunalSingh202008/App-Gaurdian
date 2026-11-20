@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+from uuid import UUID
 
 import httpx
 import psycopg
@@ -14,18 +15,20 @@ logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 3
 
 
-def claim():
+def claim(project_id: UUID | None = None):
     with connect() as conn:
         conn.execute(
             "UPDATE generations SET status = 'failed', lease_until = NULL "
-            "WHERE status = 'running' AND lease_until <= now() AND attempts >= %s",
-            (MAX_ATTEMPTS,),
+            "WHERE status = 'running' AND lease_until <= now() AND attempts >= %s "
+            "AND (%s::uuid IS NULL OR project_id = %s)",
+            (MAX_ATTEMPTS, project_id, project_id),
         )
         return conn.execute(
             """
             WITH pending AS (
                 SELECT id FROM generations
-                WHERE status = 'queued' OR (status = 'running' AND lease_until <= now())
+                WHERE (status = 'queued' OR (status = 'running' AND lease_until <= now()))
+                AND (%s::uuid IS NULL OR project_id = %s)
                 ORDER BY created_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
             )
             UPDATE generations g
@@ -34,7 +37,8 @@ def claim():
             WHERE g.id = pending.id AND p.id = g.project_id
             RETURNING g.*, p.name, p.locale,
                 (SELECT spec FROM generations WHERE id = g.source_id) AS source
-            """
+            """,
+            (project_id, project_id),
         ).fetchone()
 
 
@@ -67,8 +71,8 @@ def generate_spec(job) -> AppSpec:
     )
 
 
-def process_one() -> bool:
-    job = claim()
+def process_one(project_id: UUID | None = None) -> bool:
+    job = claim(project_id)
     if job is None:
         return False
     try:

@@ -80,3 +80,18 @@ settings. From `apps/web`, run `npm ci && npm run dev`. Vite proxies the API.
   builds it independently, and verifies authenticated CRUD in the exported app.
 
 See the [operations guide](docs/operations.md) for deployment and service limits.
+
+## Deploy this repository to Vercel
+
+Import `KunalSingh202008/App-Gaurdian` from GitHub into Vercel using the repository
+root. Vercel reads the FastAPI configuration in `vercel.json` and deploys the
+Studio UI and API together. Set `DATABASE_URL` to a managed PostgreSQL connection
+string with TLS and use a separate database or branch for previews. The API
+applies migrations when it starts. Use template mode initially, or set the four
+`AI_*` variables above for live generation.
+
+Vercel runs pending jobs during authenticated Studio requests. Opening a project
+resumes pending work. Docker Compose uses a separate worker to process jobs
+even when the browser is closed. For a repeatable release check, run
+`STUDIO_URL=https://your-project.vercel.app python3 infra/smoke.py` against a
+test deployment with registration enabled. This creates a test account and project.
