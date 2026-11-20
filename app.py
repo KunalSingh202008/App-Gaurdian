@@ -23,4 +23,8 @@ async def lifespan(_app):
 
 
 app.router.lifespan_context = lifespan
-app.mount("/", StaticFiles(directory=ROOT / "public", html=True), name="studio")
+app.mount(
+    "/",
+    StaticFiles(directory=ROOT / "public", html=True, check_dir=False),
+    name="studio",
+)

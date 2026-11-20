@@ -6,7 +6,10 @@ from psycopg.rows import dict_row
 
 
 def connect():
-    return psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row)
+    database_url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+    if not database_url:
+        raise RuntimeError("Configure DATABASE_URL or POSTGRES_URL for the Studio database")
+    return psycopg.connect(database_url, row_factory=dict_row, connect_timeout=8)
 
 
 def migrate():

@@ -86,7 +86,8 @@ See the [operations guide](docs/operations.md) for deployment and service limits
 Import `KunalSingh202008/App-Gaurdian` from GitHub into Vercel using the repository
 root. Vercel reads the FastAPI configuration in `vercel.json` and deploys the
 Studio UI and API together. Set `DATABASE_URL` to a managed PostgreSQL connection
-string with TLS and use a separate database or branch for previews. The API
+string with TLS and use a separate database or branch for previews. The app also
+accepts `POSTGRES_URL` when supplied by a Vercel database integration. The API
 applies migrations when it starts. Use template mode initially, or set the four
 `AI_*` variables above for live generation.
 
